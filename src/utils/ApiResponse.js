@@ -1,5 +1,5 @@
 class ApiResponse {
-  static success(res, data, message = 'İşlem başarılı', statusCode = 200) {
+  static success(res, data, message = 'Operation successful', statusCode = 200) {
     return res.status(statusCode).json({
       success: true,
       message,
@@ -7,7 +7,7 @@ class ApiResponse {
     });
   }
 
-  static error(res, error, message = 'Bir hata oluştu', statusCode = 500) {
+  static error(res, error, message = 'An error occurred', statusCode = 500) {
     return res.status(statusCode).json({
       success: false,
       message,

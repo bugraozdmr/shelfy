@@ -6,20 +6,20 @@ const ApiResponse = require('../utils/ApiResponse');
 exports.getAllSeries = async (req, res) => {
   req.query.type = 'SERIES'; // Force filter to only series
   const result = await baseMediaService.getAllMedia(req.query);
-  return ApiResponse.success(res, result, 'Diziler başarıyla getirildi');
+  return ApiResponse.success(res, result, 'Series fetched successfully');
 };
 
 exports.getSeasonsBySeriesId = async (req, res) => {
   const seasons = await seasonService.getSeasonsBySeriesId(req.params.id);
-  return ApiResponse.success(res, seasons, 'Diziye ait sezonlar başarıyla getirildi');
+  return ApiResponse.success(res, seasons, 'Series seasons fetched successfully');
 };
 
 exports.createSeries = async (req, res) => {
   const series = await seriesService.createSeries(req.body, req.file);
-  return ApiResponse.success(res, series, 'Dizi başarıyla oluşturuldu', 201);
+  return ApiResponse.success(res, series, 'Series created successfully', 201);
 };
 
 exports.updateSeries = async (req, res) => {
   const series = await seriesService.updateSeries(req.params.id, req.body, req.file);
-  return ApiResponse.success(res, series, 'Dizi başarıyla güncellendi');
+  return ApiResponse.success(res, series, 'Series updated successfully');
 };
