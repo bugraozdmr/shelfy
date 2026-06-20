@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Genre {
+  id      String           @id @default(uuid())
+  name    String           @unique // "Sci-Fi", "Action" (Aynı türden iki tane olmasını engeller)
+  
+  // Bir türün birden fazla medyası olabilir
+  medias  MediaListEntry[] @relation("MediaToGenre")
+
+  @@map("genres")
+}
+
+model MediaListEntry {
+  id               String      @id @default(uuid())
+  title            String
+  original_title   String?
+  type             MediaType
+  status           MediaStatus @default(PLAN_TO_WATCH)
+  genres           Genre[]     @relation("MediaToGenre")
+  release_year     Int?
+  cover_image_path String?
+  description      String?     @db.Text   // Uzun açıklamalar/notlar için
+  language         String?                // İzlenen/Okunan Dil (Örn: "Japonca", "Türkçe")
+  user_rating      Float?                 // Senin verdiğin puan (Örn: 8.5)
+  is_favorite      Boolean     @default(false)
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @default(now()) @updatedAt
+
+  // İlişkiler
+  movie            Movie?
+  series           Series?
+  print_media      PrintMedia?
+
+  @@map("media_list_entries")
+}
+
+// Medya Türleri
+enum MediaType {
+  MOVIE
+  SERIES
+  PRINT
+}
+
+// Detaylı İzleme/Okuma Durumları
+enum MediaStatus {
+  PLAN_TO_WATCH  // İzlenecek/Okunacak
+  WATCHING       // İzleniyor (veya READING)
+  COMPLETED      // Bitti
+  ON_HOLD        // Beklemeye alındı
+  DROPPED        // Yarım bırakıldı
+}
+
+// FİLM DETAYLARI
+model Movie {
+  media_id          String         @id
+  duration_minutes  Int?           // Filmin toplam süresi (Örn: 142 dk)
+  stopped_at_minute Int            @default(0) // Neresinde kaldın?
+  is_watched        Boolean        @default(false) // Bitirdim mi?
+  director          String?        // Yönetmen
+
+  mediaListEntry    MediaListEntry @relation(fields: [media_id], references: [id], onDelete: Cascade)
+
+  @@map("movies")
+}
+
+// DİZİ / ANİME ANA DETAYLARI
+model Series {
+  media_id       String         @id
+  studio         String?        // Yapımcı stüdyo (Örn: AMC, MAPPA)
+  
+  // Artık toplam sezon/bölüm sayılarını manuel girmeyeceğiz, 
+  // ilişkili tablolardan otomatik saydıracağız.
+  seasons        Season[]       // Bir dizinin birden çok sezonu olur (1-N İlişki)
+
+  mediaListEntry MediaListEntry @relation(fields: [media_id], references: [id], onDelete: Cascade)
+
+  @@map("series")
+}
+
+// SEZON TABLOSU
+model Season {
+  id                       String    @id @default(uuid())
+  series_id                String
+  season_number            Int       // 1. Sezon, 2. Sezon vb.
+  title                    String?   // Özel bir adı varsa (Örn: "Attack on Titan: The Final Season")
+  cover_image_path         String?   // Sadece bu sezona özel kapak resmi
+  user_rating              Float?    // Bu sezona özel verdiğin puan
+  default_episode_duration Int?      // Bu sezonun ortalama bölüm süresi (Örn: 45 dk)
+
+  release_year             Int?      // Sezonun yayın yılı
+  
+  series                   Series    @relation(fields: [series_id], references: [media_id], onDelete: Cascade)
+  episodes                 Episode[] // Bir sezonun birden çok bölümü olur (1-N İlişki)
+
+  @@map("seasons")
+}
+
+// BÖLÜM TABLOSU
+model Episode {
+  id               String        @id @default(uuid())
+  season_id        String
+  episode_number   Int           // 1. Bölüm, 2. Bölüm vb.
+  title            String?       // Bölümün adı (Örn: "Ozymandias")
+  duration_minutes Int?          // Bölüm standarttan uzun/kısaysa (Örn: Sezon finali 60dk)
+  status           EpisodeStatus @default(PLAN_TO_WATCH) // İzledim mi, atladım mı?
+  user_notes       String?       @db.Text // "Bu bölüm çok iyiydi, sonra tekrar dön" gibi notlar
+
+  season           Season        @relation(fields: [season_id], references: [id], onDelete: Cascade)
+
+  @@map("episodes")
+}
+
+// BÖLÜM İZLEME DURUMLARI (Bunu da dosyanın enum'lar kısmına ekle)
+enum EpisodeStatus {
+  PLAN_TO_WATCH  // Daha izlemedim
+  WATCHED        // İzledim
+  SKIPPED        // Sıkıcıydı, atladım
+  NEEDS_REWATCH  // Sonra tekrar döneceğim/izleyeceğim
+}
+
+// KİTAP / MANGA DETAYLARI
+model PrintMedia {
+  media_id                String         @id
+  author                  String?        // Yazar veya Mangaka
+  total_pages_or_chapters Int?           // Toplam sayfa/bölüm sayısı
+  current_progress        Int            @default(0) // Şu an kaçıncı sayfadasın?
+  print_type              String?        // Format (Örn: "Manga", "Roman", "Çizgi Roman")
+
+  mediaListEntry          MediaListEntry @relation(fields: [media_id], references: [id], onDelete: Cascade)
+
+  @@map("print_media")
+}
